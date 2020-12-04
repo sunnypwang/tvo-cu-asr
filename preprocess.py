@@ -4,8 +4,10 @@ import os
 from utils import *
 
 parser = argparse.ArgumentParser()
-parser.add_argument('path', nargs='?', default='.',
-                    help='directory path to JSON files. Default is current directory')
+parser.add_argument('path',
+                    help='directory path to JSON files.')
+parser.add_argument('path_out',
+                    help='output path')
 parser.add_argument('--rm_tag', action='store_true',
                     help='remove all tags <> in the output')
 parser.add_argument('--unk', action='store_true',
@@ -18,10 +20,7 @@ args = parser.parse_args()
 INCLUDE_UNK = args.unk
 REMOVE_TAG = args.rm_tag
 TIMESTAMP_LEN = args.ts
-path = args.path
 print(args)
-
-out_path = 'out/'
 
 spk_parser = {'Speaker 1': 'spk1', 'Speaker 2': 'spk2'}
 if INCLUDE_UNK:
@@ -29,7 +28,7 @@ if INCLUDE_UNK:
 
 
 json_path = []
-for root, dirs, files in os.walk(path):
+for root, dirs, files in os.walk(args.path):
     for f in files:
         if f.endswith('.json'):
             json_path.append(os.path.join(root, f))
@@ -113,26 +112,29 @@ for i in range(len(data)):
 print('Total utterances:',len(utt_id))
 
 print('Creating kaldi output files...')
+if not os.path.exists(args.path_out):
+    os.makedirs(args.path_out)
+
 # text
-with open('text', 'w', encoding='utf-8') as f:
+with open(os.path.join(args.path_out,'text'), 'w', encoding='utf-8') as f:
     flat_texts = flatten(texts)
     for i in range(len(utt_id)):
         f.write('{} {}\n'.format(utt_id[i], flat_texts[i]))
 
 # wav.scp
-with open('wav.scp', 'w', encoding='utf-8') as f:
+with open(os.path.join(args.path_out,'wav.scp'), 'w', encoding='utf-8') as f:
     for i in range(len(rec_id)):
         f.write('{} {}\n'.format(rec_id[i], audio_path[i]))
 
 # segments
-with open('segments', 'w', encoding='utf-8') as f:
+with open(os.path.join(args.path_out,'segments'), 'w', encoding='utf-8') as f:
     for i in range(len(utt_id)):
         flat_timestamps = flatten(timestamps)
         f.write('{} {} {} {}\n'.format(
             utt_id[i], match_rec_id[i], flat_timestamps[i][0], flat_timestamps[i][1]))
 
 # utt2spk
-with open('utt2spk', 'w', encoding='utf-8') as f:
+with open(os.path.join(args.path_out,'utt2spk'), 'w', encoding='utf-8') as f:
     for i in range(len(utt_id)):
         f.write('{} {}\n'.format(utt_id[i], match_spk_id[i]))
 
