@@ -1,5 +1,4 @@
 import json
-import re
 import argparse
 import os
 from utils import *
@@ -47,16 +46,15 @@ for json_file in json_path:
         for entry in d:
             wav_path = entry['data']['audio']
             entry['hospital'] = parse_hospital(json_file)
-            rid = entry['hospital'] + parse_wav(wav_path)
+            rid = entry['hospital'] + '_' + parse_wav(wav_path)
             data[rid] = entry
-            if not rid in rec_id:
+            if not rid in rec_id: #if not yet added before
                 rec_id.append(rid)
-            if not wav_path in audio_path:
                 audio_path.append(wav_path)
         del d
 print('\nTotal unqiue entries: {}\n'.format(len(data)))
 # print(data['SMPK1585808134.1429'].keys())
-# print(len(rec_id))
+# print(len(rec_id),len(audio_path))
 
 print('Extracting labels and texts...')
 labels = []
@@ -81,8 +79,9 @@ for rid in data:
             # check if speaker is Unknown, if needed
             if label_obj['labels'][0] != 'Unknown' or INCLUDE_UNK:
                 try:
-                    label = label_obj['labels'][0]
-                    text = text_obj['text'][0]
+                    label = label_obj['labels'][0].strip()
+                    text = text_obj['text'][0].strip()
+                    text = clean_text(text, remove_tag=REMOVE_TAG)
                     start = label_obj['start']
                     end = label_obj['end']
                     lb.append(label)
@@ -111,6 +110,7 @@ for i in range(len(data)):
         utt_id.append('{}_{}-{}'.format(spk_id, start, end))
         match_rec_id.append(rec_id[i])
         match_spk_id.append(spk_id)
+print('Total utterances:',len(utt_id))
 
 print('Creating kaldi output files...')
 # text
