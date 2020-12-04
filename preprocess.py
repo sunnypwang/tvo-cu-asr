@@ -5,10 +5,14 @@ import os
 from utils import *
 
 parser = argparse.ArgumentParser()
-parser.add_argument('path', nargs='?', default='.', help='directory path to JSON files. Default is current directory')
-parser.add_argument('--rm_tag',action='store_true',help='remove all tags <> in the output')
-parser.add_argument('--unk',action='store_true',help='include unknown speaker')
-parser.add_argument('--ts',type=int,default=6,help='timestamp length in utterance-id. Default is 6')
+parser.add_argument('path', nargs='?', default='.',
+                    help='directory path to JSON files. Default is current directory')
+parser.add_argument('--rm_tag', action='store_true',
+                    help='remove all tags <> in the output')
+parser.add_argument('--unk', action='store_true',
+                    help='include unknown speaker')
+parser.add_argument('--ts', type=int, default=6,
+                    help='timestamp length in utterance-id. Default is 6')
 
 args = parser.parse_args()
 
@@ -16,7 +20,7 @@ INCLUDE_UNK = args.unk
 REMOVE_TAG = args.rm_tag
 TIMESTAMP_LEN = args.ts
 path = args.path
-print('Path :',path)
+print(args)
 
 out_path = 'out/'
 
@@ -25,11 +29,11 @@ if INCLUDE_UNK:
     spk_parser['Unknown'] = 'unk'
 
 
-json_path= []
-for root,dirs,files in os.walk(path):
+json_path = []
+for root, dirs, files in os.walk(path):
     for f in files:
         if f.endswith('.json'):
-            json_path.append(os.path.join(root,f))
+            json_path.append(os.path.join(root, f))
 print('{} JSON files found'.format(len(json_path)))
 
 data = dict()
@@ -56,7 +60,7 @@ print('\nTotal unqiue entries: {}\n'.format(len(data)))
 
 print('Extracting labels and texts...')
 labels = []
-texts= []
+texts = []
 timestamps = []
 for rid in data:
     lb = []
@@ -64,67 +68,78 @@ for rid in data:
     tm = []
     result = data[rid]['completions'][0]['result']
     j = 0
-    while j < len(result): 
-        if 'direction' in result[j]: # unused object
-            j += 1
-            continue
-        if j+1 < len(result) and result[j]['id'] == result[j+1]['id']: # match label and text id
-            if not INCLUDE_UNK and result[j]['value']['labels'][0] == 'Unknown':
-                pass
-            else:
-                lb.append(result[j]['value']['labels'][0])
-                tx.append(clean_text(result[j+1]['value']['text'][0], remove_tag=REMOVE_TAG))
-                start,end = result[j+1]['value']['start'],result[j+1]['value']['end']
-                tm.append((start,end))
+    # each recording has a list of utterances, which alternates between label and text, so we will check two at a time
+    while j+1 < len(result):
+        if 'id' in result[j] and 'id' in result[j+1] and result[j]['id'] == result[j+1]['id']:  # check if id exists and matches
+            id = result[j]['id']
+            assert result[j]['type'] == 'labels', 'not a label at ID: ' + id
+            assert result[j+1]['type'] == 'textarea', 'not a textarea at ID: ' + id
+
+            label_obj = result[j]['value']
+            text_obj = result[j+1]['value']
+
+            # check if speaker is Unknown, if needed
+            if label_obj['labels'][0] != 'Unknown' or INCLUDE_UNK:
+                try:
+                    label = label_obj['labels'][0]
+                    text = text_obj['text'][0]
+                    start = label_obj['start']
+                    end = label_obj['end']
+                    lb.append(label)
+                    tx.append(text)
+                    tm.append((start, end))
+                except KeyError:
+                    print('[KeyError] at ID: {}. skipping...'.format(id))
             j += 2
         else:
-            print('no matching transcription/label for ID:',result[j]['id'])
+            print('no matching transcription/label for ID:', result[j]['id'])
             j += 1
-        assert len(lb) == len(tx)
+        assert len(lb) == len(tx) == len(tm)
     labels.append(lb)
     texts.append(tx)
     timestamps.append(tm)
 
 print('Creating utterrance list...')
 utt_id = []
-match_rec_id = [] # store matching rec_id for every utt_id
-match_spk_id = [] # store matching spk_id for every utt_id
+match_rec_id = []  # store matching rec_id for every utt_id
+match_spk_id = []  # store matching spk_id for every utt_id
 for i in range(len(data)):
     for j in range(len(labels[i])):
-        spk_id = '{}-{}'.format(rec_id[i] , spk_parser[labels[i][j]])
+        spk_id = '{}-{}'.format(rec_id[i], spk_parser[labels[i][j]])
         start = format_time(timestamps[i][j][0], TIMESTAMP_LEN)
         end = format_time(timestamps[i][j][1], TIMESTAMP_LEN)
         utt_id.append('{}_{}-{}'.format(spk_id, start, end))
-        match_rec_id.append(rec_id[i]) 
+        match_rec_id.append(rec_id[i])
         match_spk_id.append(spk_id)
 
 print('Creating kaldi output files...')
 # text
-with open('text','w', encoding='utf-8') as f:
+with open('text', 'w', encoding='utf-8') as f:
     flat_texts = flatten(texts)
     for i in range(len(utt_id)):
         f.write('{} {}\n'.format(utt_id[i], flat_texts[i]))
 
 # wav.scp
-with open('wav.scp','w', encoding='utf-8') as f:
+with open('wav.scp', 'w', encoding='utf-8') as f:
     for i in range(len(rec_id)):
         f.write('{} {}\n'.format(rec_id[i], audio_path[i]))
 
 # segments
-with open('segments','w', encoding='utf-8') as f:
+with open('segments', 'w', encoding='utf-8') as f:
     for i in range(len(utt_id)):
         flat_timestamps = flatten(timestamps)
-        f.write('{} {} {} {}\n'.format(utt_id[i], match_rec_id[i], flat_timestamps[i][0], flat_timestamps[i][1]))
+        f.write('{} {} {} {}\n'.format(
+            utt_id[i], match_rec_id[i], flat_timestamps[i][0], flat_timestamps[i][1]))
 
 # utt2spk
-with open('utt2spk','w', encoding='utf-8') as f:
+with open('utt2spk', 'w', encoding='utf-8') as f:
     for i in range(len(utt_id)):
         f.write('{} {}\n'.format(utt_id[i], match_spk_id[i]))
 
-## OPTIONAL
+# OPTIONAL
 print('Creating optional files...')
 # transcript
-with open('transcript','w', encoding='utf-8') as f:
+with open('transcript', 'w', encoding='utf-8') as f:
     flat_labels = flatten(labels)
     flat_texts = flatten(texts)
     for i in range(len(utt_id)):
