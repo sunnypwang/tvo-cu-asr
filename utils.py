@@ -1,3 +1,5 @@
+import re
+
 def parse_hospital(filename):
     return filename.strip().split('-')[-1].split('.')[0]
 
@@ -7,6 +9,7 @@ def parse_wav(filename):
 def clean_text(txt, remove_tag=False):
     if remove_tag:
         txt = re.sub(r'<\w*>','',txt)
+    txt = re.sub(r'\n','',txt)
     return txt
 
 def flatten(l):
