@@ -16,6 +16,8 @@ parser.add_argument('--unk', action='store_true',
                     help='include unknown speaker')
 parser.add_argument('--ts', type=int, default=6,
                     help='timestamp length in utterance-id. Default is 6')
+parser.add_argument('--opt', action='store_true',
+                    help='enable optional file output')                
 
 args = parser.parse_args()
 
@@ -161,12 +163,13 @@ with open(os.path.join(args.path_out,'utt2spk'), 'w', encoding='utf-8') as f:
         f.write('{} {}\n'.format(utt_id[i], match_spk_id[i]))
 
 # OPTIONAL
-print('Creating optional files...')
-# transcript
-with open('transcript', 'w', encoding='utf-8') as f:
-    flat_labels = flatten(labels)
-    flat_texts = flatten(texts)
-    for i in range(len(utt_id)):
-        f.write('{} {}\n'.format(flat_labels[i], flat_texts[i]))
+if args.opt:
+    print('Creating optional files...')
+    # transcript
+    with open(os.path.join(args.path_out,'transcript'), 'w', encoding='utf-8') as f:
+        flat_labels = flatten(labels)
+        flat_texts = flatten(texts)
+        for i in range(len(utt_id)):
+            f.write('{} {}\n'.format(flat_labels[i], flat_texts[i]))
 
-print('Done!')
+    print('Done!')
