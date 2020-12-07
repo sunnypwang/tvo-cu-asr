@@ -119,7 +119,7 @@ for rid in data:
                     print('[KeyError] at ID: {}. skipping...'.format(id))
             j += 2
         else:
-            print('no matching transcription/label for ID:', result[j]['id'])
+            print('no matching text/label for ID:', result[j]['id'], 'in', rid)
             j += 1
         assert len(lb) == len(tx) == len(tm)
     labels.append(lb)
