@@ -140,7 +140,7 @@ for i in range(len(data)):
         match_spk_id.append(spk_id)
 print('Total utterances:',len(utt_id))
 
-print('Creating kaldi output files...')
+print('Generating kaldi files at',args.path_out,'...')
 if not os.path.exists(args.path_out):
     os.makedirs(args.path_out)
 
