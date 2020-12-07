@@ -127,7 +127,7 @@ match_rec_id = []  # store matching rec_id for every utt_id
 match_spk_id = []  # store matching spk_id for every utt_id
 for i in range(len(data)):
     for j in range(len(labels[i])):
-        spk_id = '{}-{}'.format(rec_id[i], spk_parser[labels[i][j]])
+        spk_id = '{}_{}'.format(rec_id[i], spk_parser[labels[i][j]])
         start = format_time(timestamps[i][j][0], TIMESTAMP_LEN)
         end = format_time(timestamps[i][j][1], TIMESTAMP_LEN)
         utt_id.append('{}_{}-{}'.format(spk_id, start, end))
@@ -172,4 +172,4 @@ if args.opt:
         for i in range(len(utt_id)):
             f.write('{} {}\n'.format(flat_labels[i], flat_texts[i]))
 
-    print('Done!')
+    print('Done!')    
