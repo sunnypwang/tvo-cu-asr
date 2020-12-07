@@ -47,7 +47,8 @@ for root, dirs, files in os.walk(args.path):
 print('{} JSON files found'.format(len(json_path)))
 
 data = dict()
-miss_wav_id = set()
+missing_wav = set()
+missing_transcription = set()
 rec_id = []
 rec_id_path = []
 for json_file in json_path:
@@ -59,22 +60,26 @@ for json_file in json_path:
         for entry in d:
             entry['hospital'] = parse_hospital(json_file)
             wav_id = parse_wav(entry['data']['audio'])
-            if wav_id in audio_path:
-                rid = entry['hospital'] + '_' + wav_id
-                if not rid in data: # append only if not found before
-                    rec_id.append(rid)
-                    rec_id_path.append(audio_path[wav_id]) # get path from audio_path object
-                    new_count += 1
-                data[rid] = entry # always overwrite older one
+            if len(entry['completions'][0]['result']) > 0: # check if transcription exists for this wav file
+                if wav_id in audio_path:
+                    rid = entry['hospital'] + '_' + wav_id
+                    if not rid in data: # append only if not found before
+                        rec_id.append(rid)
+                        rec_id_path.append(audio_path[wav_id]) # get path from audio_path object
+                        new_count += 1
+                    data[rid] = entry # always overwrite older one
+                else:
+                    missing_wav.add(wav_id)
+                    miss_count += 1      
             else:
-                miss_wav_id.add(wav_id)
-                miss_count += 1
-                
+                missing_transcription.add(wav_id)
+
         print(len(d),'entries,',new_count,'new,',miss_count,'missing')
         del d
 print('')
 print('Total unique entries:',len(data))
-print('Total miss entries:',len(miss_wav_id))
+print('Total entries with missing wav:',len(missing_wav))
+print('Total entries with missing transcription:',len(missing_transcription))
 print('')
 # print(data['SMPK1585808134.1429'].keys())
 # print(len(rec_id),len(audio_path))
