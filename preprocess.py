@@ -8,6 +8,8 @@ parser.add_argument('path',
                     help='directory path to JSON files.')
 parser.add_argument('path_out',
                     help='output path')
+parser.add_argument('path_wav',
+                    help='wav files path')
 parser.add_argument('--rm_tag', action='store_true',
                     help='remove all tags <> in the output')
 parser.add_argument('--unk', action='store_true',
@@ -27,6 +29,14 @@ if INCLUDE_UNK:
     spk_parser['Unknown'] = 'unk'
 
 
+audio_path = dict()
+for root, dirs, files in os.walk(args.path_wav):
+    for f in files:
+        if f.endswith('.wav'):
+            wav_id = parse_wav(f)
+            audio_path[wav_id] = os.path.join(root, f)
+print('{} wav files found'.format(len(audio_path)))
+
 json_path = []
 for root, dirs, files in os.walk(args.path):
     for f in files:
@@ -35,23 +45,35 @@ for root, dirs, files in os.walk(args.path):
 print('{} JSON files found'.format(len(json_path)))
 
 data = dict()
-audio_path = []
+miss_wav_id = set()
 rec_id = []
+rec_id_path = []
 for json_file in json_path:
-    print('Reading {}...'.format(json_file), end=' ')
+    print('Reading {}...'.format(json_file), end='\t')
     with open(json_file, encoding='utf-8') as f:
         d = json.load(f)
-        print('{} entries found'.format(len(d)))
+        new_count = 0
+        miss_count = 0
         for entry in d:
-            wav_path = entry['data']['audio']
             entry['hospital'] = parse_hospital(json_file)
-            rid = entry['hospital'] + '_' + parse_wav(wav_path)
-            data[rid] = entry
-            if not rid in rec_id: #if not yet added before
-                rec_id.append(rid)
-                audio_path.append(wav_path)
+            wav_id = parse_wav(entry['data']['audio'])
+            if wav_id in audio_path:
+                rid = entry['hospital'] + '_' + wav_id
+                if not rid in data: # append only if not found before
+                    rec_id.append(rid)
+                    rec_id_path.append(audio_path[wav_id]) # get path from audio_path object
+                    new_count += 1
+                data[rid] = entry # always overwrite older one
+            else:
+                miss_wav_id.add(wav_id)
+                miss_count += 1
+                
+        print(len(d),'entries,',new_count,'new,',miss_count,'missing')
         del d
-print('\nTotal unqiue entries: {}\n'.format(len(data)))
+print('')
+print('Total unique entries:',len(data))
+print('Total miss entries:',len(miss_wav_id))
+print('')
 # print(data['SMPK1585808134.1429'].keys())
 # print(len(rec_id),len(audio_path))
 
@@ -124,7 +146,7 @@ with open(os.path.join(args.path_out,'text'), 'w', encoding='utf-8') as f:
 # wav.scp
 with open(os.path.join(args.path_out,'wav.scp'), 'w', encoding='utf-8') as f:
     for i in range(len(rec_id)):
-        f.write('{} {}\n'.format(rec_id[i], audio_path[i]))
+        f.write('{} {}\n'.format(rec_id[i], rec_id_path[i]))
 
 # segments
 with open(os.path.join(args.path_out,'segments'), 'w', encoding='utf-8') as f:
