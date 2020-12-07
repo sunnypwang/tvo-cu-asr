@@ -162,6 +162,8 @@ with open(os.path.join(args.path_out,'utt2spk'), 'w', encoding='utf-8') as f:
     for i in range(len(utt_id)):
         f.write('{} {}\n'.format(utt_id[i], match_spk_id[i]))
 
+print('Done!') 
+
 # OPTIONAL
 if args.opt:
     print('Creating optional files...')
