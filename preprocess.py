@@ -119,9 +119,10 @@ for rid in data:
                     text = clean_text(text, remove_tag=REMOVE_TAG)
                     start = label_obj['start']
                     end = label_obj['end']
-                    lb.append(label)
-                    tx.append(text)
-                    tm.append((start, end))
+                    if len(text) > 0: # skip blank utterance
+                        lb.append(label)
+                        tx.append(text)
+                        tm.append((start, end))
                 except KeyError:
                     print('[KeyError] at ID: {}. skipping...'.format(id))
             j += 2
