@@ -50,6 +50,7 @@ json_path = sorted(json_path)
 data = dict()
 missing_wav = set()
 missing_transcription = set()
+new_entry = dict()
 rec_id = []
 rec_id_path = []
 for json_file in json_path:
@@ -60,6 +61,7 @@ for json_file in json_path:
         old_count = 0
         miss_wav_count = 0
         miss_transcript_count = 0
+        new_entry[json_file] = []
         for entry in d:
             entry['hospital'] = parse_hospital(json_file)
             wav_id = parse_wav(entry['data']['audio'])
@@ -71,6 +73,7 @@ for json_file in json_path:
                         rec_id_path.append(audio_path[wav_id]) # get path from audio_path object
                         data[wav_id] = entry # this simply new wav_id add to dict 
                         new_count += 1
+                        new_entry[json_file].append(wav_id)
                     else:
                         data[wav_id] = entry # this overwrite older transcription of same wav_id
                         old_count += 1
@@ -186,5 +189,11 @@ if args.opt:
         flat_texts = flatten(texts)
         for i in range(len(utt_id)):
             f.write('{} {}\n'.format(flat_labels[i], flat_texts[i]))
+
+    with open(os.path.join(args.path_out,'unique'), 'w', encoding='utf-8') as f:
+        for json_file in new_entry:
+            f.write('{}\n'.format(json_file))
+            for entry in new_entry[json_file]:
+                f.write('{}\n'.format(entry))
 
     print('Done!')    
