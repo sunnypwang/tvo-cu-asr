@@ -17,4 +17,7 @@ def flatten(l):
 
 def format_time(t, length=6): # convert 12.3456789 into 012345
     str_f = '{:0' + str(length) + 'd}'
-    return str_f.format( int(t * 1000))
+    return str_f.format( round(t * 1000))
+
+def round_time(t, d=3):
+    return round(t, d)

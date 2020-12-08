@@ -161,7 +161,7 @@ with open(os.path.join(args.path_out,'segments'), 'w', encoding='utf-8') as f:
     for i in range(len(utt_id)):
         flat_timestamps = flatten(timestamps)
         f.write('{} {} {} {}\n'.format(
-            utt_id[i], match_rec_id[i], flat_timestamps[i][0], flat_timestamps[i][1]))
+            utt_id[i], match_rec_id[i], round_time(flat_timestamps[i][0]), round_time(flat_timestamps[i][1])))
 
 # utt2spk
 with open(os.path.join(args.path_out,'utt2spk'), 'w', encoding='utf-8') as f:
