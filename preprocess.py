@@ -57,25 +57,31 @@ for json_file in json_path:
     with open(json_file, encoding='utf-8') as f:
         d = json.load(f)
         new_count = 0
-        miss_count = 0
+        old_count = 0
+        miss_wav_count = 0
+        miss_transcript_count = 0
         for entry in d:
             entry['hospital'] = parse_hospital(json_file)
             wav_id = parse_wav(entry['data']['audio'])
             if len(entry['completions'][0]['result']) > 0: # check if transcription exists for this wav file
                 if wav_id in audio_path:
-                    rid = entry['hospital'] + '_' + wav_id
-                    if not rid in data: # append only if not found before
+                    if not wav_id in data: # append only if not found before
+                        rid = entry['hospital'] + '_' + wav_id
                         rec_id.append(rid)
                         rec_id_path.append(audio_path[wav_id]) # get path from audio_path object
+                        data[wav_id] = entry # this simply new wav_id add to dict 
                         new_count += 1
-                    data[rid] = entry # always overwrite older one
+                    else:
+                        data[wav_id] = entry # this overwrite older transcription of same wav_id
+                        old_count += 1
                 else:
                     missing_wav.add(wav_id)
-                    miss_count += 1      
+                    miss_wav_count += 1    
             else:
                 missing_transcription.add(wav_id)
+                miss_transcript_count += 1
 
-        print(len(d),'entries,',new_count,'new,',miss_count,'missing')
+        print(len(d),'entries,',new_count,'new,',old_count,'replaced,',miss_wav_count,'missing wav,',miss_transcript_count,'missing transcription')
         del d
 print('')
 print('Total unique entries:',len(data))
