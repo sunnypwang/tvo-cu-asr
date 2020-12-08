@@ -45,6 +45,7 @@ for root, dirs, files in os.walk(args.path):
         if f.endswith('.json'):
             json_path.append(os.path.join(root, f))
 print('{} JSON files found'.format(len(json_path)))
+json_path = sorted(json_path)
 
 data = dict()
 missing_wav = set()
