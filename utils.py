@@ -9,6 +9,8 @@ def parse_wav(filename):
 def clean_text(txt, remove_tag=False):
     if remove_tag:
         txt = re.sub(r'<\w*>','',txt)
+        txt = re.sub(r'<[A-z]*','',txt)
+        txt = re.sub(r'[A-z]*>','',txt)
     txt = re.sub(r'\n','',txt)
     return txt
 
